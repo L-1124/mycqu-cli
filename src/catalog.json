@@ -804,6 +804,9 @@
               "id": {
                 "type": "integer"
               },
+              "name": {
+                "type": "string"
+              },
               "year": {
                 "type": "integer"
               },
@@ -896,6 +899,9 @@
           "properties": {
             "id": {
               "type": "integer"
+            },
+            "name": {
+              "type": "string"
             },
             "year": {
               "type": "integer"
@@ -999,6 +1005,9 @@
           "properties": {
             "id": {
               "type": "integer"
+            },
+            "name": {
+              "type": "string"
             },
             "year": {
               "type": "integer"
