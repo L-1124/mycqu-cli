@@ -5,6 +5,8 @@
 [![Agent Skills](https://img.shields.io/badge/Agent%20Skills-Ready-green?logo=openai)](https://agents.md/)
 [![Platform: Windows](https://img.shields.io/badge/Platform-Windows%20(DPAPI)-0078D6?logo=windows)](https://learn.microsoft.com/en-us/windows/win32/seccrypto/cryptprotectdata)
 
+[English](README.md) · [简体中文](README_zh.md)
+
 `mycqu` is a native, agent-first command-line tool for Chongqing University (CQU, 重庆大学) campus services. Built for humans and autonomous AI coding agents (Claude Code, Cursor, Codex, OpenCode, and custom LLM workflows), it unifies CQU Unified Authentication (SSO), teaching timetables, academic records, campus cards, and dorm utilities behind a non-interactive, structured interface.
 
 ---
