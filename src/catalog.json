@@ -1,0 +1,2134 @@
+[
+  {
+    "path": "auth login",
+    "description": "登录统一身份认证账号；需要人工输入时返回 challenge_id 供续接",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "--auth"
+      ],
+      "properties": {
+        "--auth": {
+          "type": "string",
+          "minLength": 1,
+          "description": "统一身份认证账号（学工号或学号）"
+        },
+        "--stdin-password": {
+          "type": "boolean",
+          "default": false,
+          "description": "从标准输入读取密码"
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1,
+          "description": "输出契约版本"
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "message": {
+              "type": "string"
+            },
+            "cleanup": {
+              "type": "object",
+              "description": "本地清理结果；challenge_cleared 为 false 时流程可能未彻底结束",
+              "properties": {
+                "session_persisted": {
+                  "type": "boolean",
+                  "description": "会话终态是否已写入本地"
+                },
+                "challenge_cleared": {
+                  "type": "boolean",
+                  "description": "本地挑战状态是否已清理"
+                },
+                "captcha_cleared": {
+                  "type": "boolean",
+                  "description": "验证码图片是否已清理"
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            },
+            "challenge_id": {
+              "type": "string",
+              "description": "不透明挑战 ID；auth verify 必须回传匹配值"
+            },
+            "next_action": {
+              "type": "string"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            },
+            "count": {
+              "type": "integer"
+            },
+            "stop_reason": {
+              "type": "string"
+            },
+            "checked_service": {
+              "type": "string"
+            },
+            "checked_at": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": false,
+    "has_side_effects": true,
+    "confirmation": {
+      "required": true,
+      "reason": "使用用户提供的账号密码发起真实登录",
+      "user_authorization": "调用环境需已获得用户授权；密码只接受隐藏终端输入或 stdin"
+    },
+    "next_actions": {
+      "CAPTCHA_REQUIRED": "auth captcha",
+      "SECOND_FACTOR_REQUIRED": "auth send-code",
+      "INVALID_CREDENTIALS": "auth verify"
+    },
+    "possible_errors": [
+      "INVALID_ARGUMENT",
+      "AUTH_REQUIRED",
+      "INVALID_CREDENTIALS",
+      "CAPTCHA_REQUIRED",
+      "SECOND_FACTOR_REQUIRED",
+      "AUTH_FLOW_EXPIRED",
+      "NETWORK_TIMEOUT",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "auth status",
+    "description": "检查当前本地会话状态；--online 时标注所验证的服务与时间",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "--online": {
+          "type": "boolean",
+          "default": false,
+          "description": "发起在线请求确证 SSO 有效性"
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "is_login"
+          ],
+          "properties": {
+            "is_login": {
+              "type": "boolean"
+            },
+            "pending_stage": {
+              "type": "string"
+            },
+            "online_status": {
+              "type": "string",
+              "enum": [
+                "Authenticated",
+                "Unauthenticated"
+              ]
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            },
+            "checked_service": {
+              "type": "string"
+            },
+            "checked_at": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": false,
+    "has_side_effects": false,
+    "next_actions": {
+      "AUTH_REQUIRED": "auth login"
+    },
+    "possible_errors": [
+      "AUTH_REQUIRED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "auth captcha",
+    "description": "获取当前待完成认证的图形验证码图片受限本地路径",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {}
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "captcha_path",
+            "format"
+          ],
+          "properties": {
+            "captcha_path": {
+              "type": "string",
+              "description": "受限本地文件路径，不包含认证上下文"
+            },
+            "format": {
+              "type": "string",
+              "const": "image/png"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": false,
+    "has_side_effects": false,
+    "next_actions": {
+      "SUCCESS": "auth verify --stdin-code"
+    },
+    "possible_errors": [
+      "AUTH_REQUIRED",
+      "AUTH_FLOW_EXPIRED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "auth send-code",
+    "description": "发送或重发二次身份验证码（显式副作用动作）",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "--kind": {
+          "type": "string",
+          "enum": [
+            "sms",
+            "mail"
+          ],
+          "default": "sms",
+          "description": "验证码通道类型"
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "message": {
+              "type": "string"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": false,
+    "has_side_effects": true,
+    "confirmation": {
+      "required": true,
+      "reason": "向绑定手机或邮箱发送真实验证码，可能产生费用或打扰",
+      "user_authorization": "需符合调用环境的用户授权与确认要求"
+    },
+    "next_actions": {
+      "SUCCESS": "auth verify --stdin-code"
+    },
+    "possible_errors": [
+      "INVALID_ARGUMENT",
+      "AUTH_REQUIRED",
+      "AUTH_FLOW_EXPIRED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "auth verify",
+    "description": "提交验证码继续登录；--challenge-id 为必填，与当前流程不匹配或过期时返回 AUTH_FLOW_EXPIRED",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "--challenge-id"
+      ],
+      "properties": {
+        "--challenge-id": {
+          "type": "string",
+          "description": "待续接的认证流程挑战 ID（必填，取自上一次认证响应的 challenge_id）"
+        },
+        "--stdin-code": {
+          "type": "boolean",
+          "default": false,
+          "description": "从标准输入读取验证码内容"
+        },
+        "--kind": {
+          "type": "string",
+          "enum": [
+            "sms",
+            "mail"
+          ],
+          "default": "sms",
+          "description": "二次验证通道类型"
+        },
+        "--stdin-password": {
+          "type": "boolean",
+          "default": false,
+          "description": "通过 stdin 输入密码（图形验证码重试）"
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "message": {
+              "type": "string"
+            },
+            "cleanup": {
+              "type": "object",
+              "description": "本地清理结果；challenge_cleared 为 false 时流程可能未彻底结束",
+              "properties": {
+                "session_persisted": {
+                  "type": "boolean",
+                  "description": "会话终态是否已写入本地"
+                },
+                "challenge_cleared": {
+                  "type": "boolean",
+                  "description": "本地挑战状态是否已清理"
+                },
+                "captcha_cleared": {
+                  "type": "boolean",
+                  "description": "验证码图片是否已清理"
+                }
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            },
+            "challenge_id": {
+              "type": "string",
+              "description": "轮换后的新挑战 ID；后续 auth verify 必须回传"
+            },
+            "next_action": {
+              "type": "string"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": false,
+    "has_side_effects": true,
+    "confirmation": {
+      "required": true,
+      "reason": "提交用户提供的验证码，继续真实认证流程",
+      "user_authorization": "需符合调用环境的用户授权与确认要求"
+    },
+    "next_actions": {
+      "SECOND_FACTOR_REQUIRED": "auth send-code",
+      "CAPTCHA_REQUIRED": "auth captcha",
+      "INVALID_CREDENTIALS": "auth verify"
+    },
+    "possible_errors": [
+      "INVALID_ARGUMENT",
+      "AUTH_REQUIRED",
+      "INVALID_CREDENTIALS",
+      "CAPTCHA_REQUIRED",
+      "AUTH_FLOW_EXPIRED",
+      "SECOND_FACTOR_REQUIRED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "auth logout",
+    "description": "退出并清理本地会话；分别报告服务端退出与本地清理结果，会话读取失败时返回 STATE_INVALID",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {}
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "server_logout": {
+              "type": "boolean",
+              "description": "服务端退出是否成功"
+            },
+            "local_cleared": {
+              "type": "boolean",
+              "description": "本地会话与挑战状态是否已清理"
+            },
+            "message": {
+              "type": "string"
+            },
+            "local_error": {
+              "type": "string"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": false,
+    "has_side_effects": true,
+    "confirmation": {
+      "required": true,
+      "reason": "退出服务端会话并清除本地凭据",
+      "user_authorization": "需符合调用环境的用户授权与确认要求"
+    },
+    "possible_errors": [
+      "UPSTREAM_ERROR",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT"
+    ]
+  },
+  {
+    "path": "user show",
+    "description": "查看当前登录用户信息",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {}
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string"
+            },
+            "code": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string"
+            },
+            "email": {
+              "type": "string"
+            },
+            "phone_number": {
+              "type": "string"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": true,
+    "has_side_effects": false,
+    "next_actions": {
+      "AUTH_REQUIRED": "auth login"
+    },
+    "possible_errors": [
+      "AUTH_REQUIRED",
+      "PERMISSION_DENIED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "RESPONSE_INVALID",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "term list",
+    "description": "列出所有学期",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {}
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "year": {
+                "type": "integer"
+              },
+              "is_autumn": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            },
+            "count": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": true,
+    "has_side_effects": false,
+    "next_actions": {
+      "AUTH_REQUIRED": "auth login"
+    },
+    "possible_errors": [
+      "AUTH_REQUIRED",
+      "PERMISSION_DENIED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "RESPONSE_INVALID",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "term current",
+    "description": "显示当前学期详细信息",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {}
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "id": {
+              "type": "integer"
+            },
+            "year": {
+              "type": "integer"
+            },
+            "is_autumn": {
+              "type": "boolean"
+            },
+            "begin_date_str": {
+              "type": "string"
+            },
+            "end_date_str": {
+              "type": "string"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": true,
+    "has_side_effects": false,
+    "next_actions": {
+      "AUTH_REQUIRED": "auth login"
+    },
+    "possible_errors": [
+      "AUTH_REQUIRED",
+      "PERMISSION_DENIED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "RESPONSE_INVALID",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "term show",
+    "description": "获取指定学期详细信息",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "--id"
+      ],
+      "properties": {
+        "--id": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "学期 ID"
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "id": {
+              "type": "integer"
+            },
+            "year": {
+              "type": "integer"
+            },
+            "is_autumn": {
+              "type": "boolean"
+            },
+            "begin_date_str": {
+              "type": "string"
+            },
+            "end_date_str": {
+              "type": "string"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": true,
+    "has_side_effects": false,
+    "next_actions": {
+      "AUTH_REQUIRED": "auth login"
+    },
+    "possible_errors": [
+      "AUTH_REQUIRED",
+      "PERMISSION_DENIED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "RESPONSE_INVALID",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "schedule list",
+    "description": "查询课程表；--date 与 --week 互斥，周次不能为 0",
+    "mutually_exclusive": [
+      [
+        "--date",
+        "--week"
+      ]
+    ],
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "--term": {
+          "type": "string",
+          "default": "current",
+          "description": "学期标识：整数 ID 或 'current'"
+        },
+        "--date": {
+          "type": "string",
+          "format": "date",
+          "description": "指定日期 YYYY-MM-DD（与 --week 互斥）"
+        },
+        "--week": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "指定周次（与 --date 互斥，不能为 0）"
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "课程表条目（含课程信息、行课周次与上课时间）"
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            },
+            "count": {
+              "type": "integer"
+            },
+            "query_range": {
+              "type": "object",
+              "description": "已解析的查询范围（学期 ID、日期或周次）",
+              "required": [
+                "term_id"
+              ],
+              "properties": {
+                "term_id": {
+                  "type": "integer",
+                  "description": "实际解析出的学期 ID"
+                },
+                "date": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "实际过滤的日期"
+                },
+                "week": {
+                  "type": "integer",
+                  "description": "实际过滤的教学周次"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": true,
+    "has_side_effects": false,
+    "next_actions": {
+      "AUTH_REQUIRED": "auth login"
+    },
+    "possible_errors": [
+      "INVALID_ARGUMENT",
+      "AUTH_REQUIRED",
+      "PERMISSION_DENIED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "RESPONSE_INVALID",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "score list",
+    "description": "获取成绩列表；--term 为本地过滤，非服务端筛选",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "--is-minor": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否辅修"
+        },
+        "--term": {
+          "type": "string",
+          "description": "按学期年份（如 2024）或 'current' 过滤"
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "成绩条目（含学期与课程信息）"
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            },
+            "count": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": true,
+    "has_side_effects": false,
+    "next_actions": {
+      "AUTH_REQUIRED": "auth login"
+    },
+    "possible_errors": [
+      "INVALID_ARGUMENT",
+      "AUTH_REQUIRED",
+      "PERMISSION_DENIED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "RESPONSE_INVALID",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "score gpa",
+    "description": "获取绩点与排名",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {}
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "gpa": {
+              "type": "number"
+            },
+            "major_ranking": {
+              "type": "integer"
+            },
+            "grade_ranking": {
+              "type": "integer"
+            },
+            "class_ranking": {
+              "type": "integer"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": true,
+    "has_side_effects": false,
+    "next_actions": {
+      "AUTH_REQUIRED": "auth login"
+    },
+    "possible_errors": [
+      "AUTH_REQUIRED",
+      "PERMISSION_DENIED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "RESPONSE_INVALID",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "course list",
+    "description": "查询可选课程列表目录",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {
+        "--is-major": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否为主修课程 (true/false)"
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true
+            }
+          },
+          "description": "课程目录映射"
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            },
+            "count": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": true,
+    "has_side_effects": false,
+    "next_actions": {
+      "AUTH_REQUIRED": "auth login"
+    },
+    "possible_errors": [
+      "AUTH_REQUIRED",
+      "PERMISSION_DENIED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "RESPONSE_INVALID",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "course classes",
+    "description": "查询指定课程的具体教学班级详情",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "--course-id"
+      ],
+      "properties": {
+        "--course-id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "课程 ID（从 course list 获取）"
+        },
+        "--is-major": {
+          "type": "boolean",
+          "default": true,
+          "description": "是否为主修课程 (true/false)"
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "教学班条目"
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            },
+            "count": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": true,
+    "has_side_effects": false,
+    "next_actions": {
+      "AUTH_REQUIRED": "auth login"
+    },
+    "possible_errors": [
+      "AUTH_REQUIRED",
+      "PERMISSION_DENIED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "RESPONSE_INVALID",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "exam list",
+    "description": "查询考试安排列表",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {}
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "description": "考试安排条目"
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            },
+            "count": {
+              "type": "integer"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": true,
+    "has_side_effects": false,
+    "next_actions": {
+      "AUTH_REQUIRED": "auth login"
+    },
+    "possible_errors": [
+      "AUTH_REQUIRED",
+      "PERMISSION_DENIED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "RESPONSE_INVALID",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "card balance",
+    "description": "查询校园卡余额",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [],
+      "properties": {}
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "id": {
+              "type": "integer",
+              "description": "一卡通账户号"
+            },
+            "amount": {
+              "type": "integer",
+              "description": "账户余额，单位为分"
+            },
+            "account_status": {
+              "type": "string"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": true,
+    "has_side_effects": false,
+    "next_actions": {
+      "AUTH_REQUIRED": "auth login"
+    },
+    "possible_errors": [
+      "AUTH_REQUIRED",
+      "PERMISSION_DENIED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "RESPONSE_INVALID",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "card bills",
+    "description": "查询校园卡消费账单；满页时不完整结果以退出码 7 返回",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "--start-date",
+        "--end-date"
+      ],
+      "properties": {
+        "--start-date": {
+          "type": "string",
+          "format": "date",
+          "description": "开始日期 YYYY-MM-DD"
+        },
+        "--end-date": {
+          "type": "string",
+          "format": "date",
+          "description": "结束日期 YYYY-MM-DD"
+        },
+        "--page": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1,
+          "description": "分页页码 (>= 1)"
+        },
+        "--row": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 100,
+          "description": "每页行数 (>= 1)"
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "date": {
+                "type": "string"
+              },
+              "place": {
+                "type": "string"
+              },
+              "tran_amount": {
+                "type": "integer",
+                "description": "交易金额，单位为分"
+              }
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean",
+              "description": "满页时为 false"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            },
+            "count": {
+              "type": "integer"
+            },
+            "stop_reason": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": true,
+    "has_side_effects": false,
+    "next_actions": {
+      "AUTH_REQUIRED": "auth login"
+    },
+    "possible_errors": [
+      "INVALID_ARGUMENT",
+      "AUTH_REQUIRED",
+      "PERMISSION_DENIED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "RESPONSE_INVALID",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "dorm balance",
+    "description": "查询宿舍水电费余额",
+    "input_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "--room"
+      ],
+      "properties": {
+        "--room": {
+          "type": "string",
+          "minLength": 1,
+          "description": "房间号或房间标识"
+        },
+        "--is-huxi": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否为虎溪校区"
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "ok",
+        "meta"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": 1
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "data": {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "balance": {
+              "type": "string",
+              "description": "账户余额"
+            }
+          }
+        },
+        "error": {
+          "type": "object",
+          "required": [
+            "code",
+            "message",
+            "retryable"
+          ],
+          "properties": {
+            "code": {
+              "type": "string"
+            },
+            "message": {
+              "type": "string"
+            },
+            "retryable": {
+              "type": "boolean"
+            }
+          }
+        },
+        "meta": {
+          "type": "object",
+          "required": [
+            "complete",
+            "timezone"
+          ],
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "timezone": {
+              "type": "string",
+              "const": "Asia/Shanghai"
+            }
+          }
+        }
+      }
+    },
+    "requires_auth": true,
+    "has_side_effects": false,
+    "next_actions": {
+      "AUTH_REQUIRED": "auth login"
+    },
+    "possible_errors": [
+      "AUTH_REQUIRED",
+      "PERMISSION_DENIED",
+      "STATE_INVALID",
+      "NETWORK_TIMEOUT",
+      "RESPONSE_INVALID",
+      "UPSTREAM_ERROR"
+    ]
+  },
+  {
+    "path": "skill setup",
+    "description": "安装并分发 Skill 到本机 Agent 环境（Claude Code, Cursor, Codex 等）",
+    "input_schema": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "--mode": {
+          "type": "string",
+          "enum": ["multi", "mono"],
+          "default": "multi",
+          "description": "Skill 布局模式：multi (推荐) 或 mono"
+        },
+        "--target": {
+          "type": "string",
+          "default": "all",
+          "description": "目标 Agent 环境：all, agents, claude, cursor, codex..."
+        },
+        "--dry-run": {
+          "type": "boolean",
+          "default": false,
+          "description": "仅预览安装计划与备份动作，不进行实际磁盘操作"
+        },
+        "--yes": {
+          "type": "boolean",
+          "default": false,
+          "description": "跳过交互确认"
+        },
+        "--global": {
+          "type": "boolean",
+          "default": true,
+          "description": "安装到用户全局 ~/.agents/skills（默认）"
+        },
+        "--source": {
+          "type": "string",
+          "description": "从指定本地路径加载 Skill 覆盖内嵌资源"
+        },
+        "--force": {
+          "type": "boolean",
+          "default": false,
+          "description": "强制覆盖已安装 Skill"
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "required": ["schema_version", "ok", "meta"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "ok": { "type": "boolean" },
+        "data": { "type": "object" },
+        "meta": { "type": "object" }
+      }
+    },
+    "requires_auth": false,
+    "has_side_effects": true,
+    "confirmation": {
+      "required": false,
+      "reason": "安装或更新 Skill 到本地 Agent 目录",
+      "user_authorization": "调用环境需已获得用户授权"
+    },
+    "possible_errors": [
+      "USAGE_ERROR",
+      "INTERNAL_ERROR"
+    ]
+  },
+  {
+    "path": "skill list",
+    "description": "列出当前可用的内嵌 Skill 以及宿主机的安装状态",
+    "input_schema": {
+      "type": "object",
+      "required": [],
+      "properties": {}
+    },
+    "output_schema": {
+      "type": "object",
+      "required": ["schema_version", "ok", "meta"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "ok": { "type": "boolean" },
+        "data": { "type": "object" },
+        "meta": { "type": "object" }
+      }
+    },
+    "requires_auth": false,
+    "has_side_effects": false,
+    "possible_errors": [
+      "INTERNAL_ERROR"
+    ]
+  },
+  {
+    "path": "skill check",
+    "description": "检查当前已安装 Skill 的完整性与版本摘要",
+    "input_schema": {
+      "type": "object",
+      "required": [],
+      "properties": {}
+    },
+    "output_schema": {
+      "type": "object",
+      "required": ["schema_version", "ok", "meta"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "ok": { "type": "boolean" },
+        "data": { "type": "object" },
+        "meta": { "type": "object" }
+      }
+    },
+    "requires_auth": false,
+    "has_side_effects": false,
+    "possible_errors": [
+      "INTERNAL_ERROR"
+    ]
+  },
+  {
+    "path": "skill uninstall",
+    "description": "卸载受管的 Skill 并清理状态记录",
+    "input_schema": {
+      "type": "object",
+      "required": [],
+      "properties": {
+        "--skill": {
+          "type": "string",
+          "description": "要卸载的 Skill 名称；不传则卸载全部"
+        },
+        "--yes": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "output_schema": {
+      "type": "object",
+      "required": ["schema_version", "ok", "meta"],
+      "properties": {
+        "schema_version": { "const": 1 },
+        "ok": { "type": "boolean" },
+        "data": { "type": "object" },
+        "meta": { "type": "object" }
+      }
+    },
+    "requires_auth": false,
+    "has_side_effects": true,
+    "confirmation": {
+      "required": true,
+      "reason": "卸载受管的 Skill 目录",
+      "user_authorization": "调用环境需已获得用户授权"
+    },
+    "possible_errors": [
+      "NOT_FOUND",
+      "INTERNAL_ERROR"
+    ]
+  }
+]
