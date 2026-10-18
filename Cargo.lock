@@ -1863,6 +1863,7 @@ dependencies = [
 [[package]]
 name = "rsmycqu"
 version = "0.4.4"
+source = "git+https://github.com/L-1124/rsmycqu#11ffbe4b94c39483f51c3b2fa1803790a1a1aa80"
 dependencies = [
  "aes",
  "base64 0.22.1",

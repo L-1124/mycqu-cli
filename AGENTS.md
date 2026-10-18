@@ -10,7 +10,7 @@
 
 ## Setup & Build Commands
 
-- **Prerequisites**: Rust 1.89+ (2024 edition). Local sibling path dependency `../rsmycqu` must be available.
+- **Prerequisites**: Rust 1.89+ (2024 edition). The `rsmycqu` dependency is automatically fetched via Git (`https://github.com/L-1124/rsmycqu`).
 - **Build**: `cargo build`
 - **Release Build**: `cargo build --release`
 - **Run Directly**: `cargo run -- [subcommand] [flags]`

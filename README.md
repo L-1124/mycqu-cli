@@ -31,7 +31,7 @@
 
 - [Rust](https://rustup.rs/) toolchain (1.89+ with 2024 edition support)
 - Windows host for DPAPI credential protection
-- Sibling dependency checkout: `../rsmycqu`
+- Dependency: [rsmycqu](https://github.com/L-1124/rsmycqu) (resolved automatically via Cargo git dependency)
 
 ### Installation
 
