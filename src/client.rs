@@ -1,8 +1,8 @@
 //! HTTP 客户端构造与上游错误到输出契约错误码的映射。
 
 use rsmycqu::errors::session::SessionError;
-use rsmycqu::errors::{ApiError, RsMyCQUError};
 use rsmycqu::errors::sso::SSOError;
+use rsmycqu::errors::{ApiError, RsMyCQUError};
 use rsmycqu::session::Client;
 use std::time::Duration;
 
@@ -88,42 +88,26 @@ pub fn map_api_error<T: RsMyCQUError>(context: &str, err: &ApiError<T>) -> Mappe
     use rsmycqu::errors::ApiError as E;
 
     let (code, exit_code, retryable) = match err {
-        E::NotLogin => (
-            "AUTH_REQUIRED",
-            crate::output::EXIT_AUTH_REQUIRED,
-            false,
-        ),
+        E::NotLogin => ("AUTH_REQUIRED", crate::output::EXIT_AUTH_REQUIRED, false),
         E::NotAccess => (
             "PERMISSION_DENIED",
             crate::output::EXIT_PERMISSION_DENIED,
             false,
         ),
-        E::Request { .. } if err.is_timeout() => (
-            "NETWORK_TIMEOUT",
-            crate::output::EXIT_UPSTREAM_ERROR,
-            true,
-        ),
-        E::Request { .. } => (
-            "UPSTREAM_ERROR",
-            crate::output::EXIT_UPSTREAM_ERROR,
-            true,
-        ),
+        E::Request { .. } if err.is_timeout() => {
+            ("NETWORK_TIMEOUT", crate::output::EXIT_UPSTREAM_ERROR, true)
+        }
+        E::Request { .. } => ("UPSTREAM_ERROR", crate::output::EXIT_UPSTREAM_ERROR, true),
         E::HttpStatus { status } => match status.as_u16() {
             401 | 403 => (
                 "PERMISSION_DENIED",
                 crate::output::EXIT_PERMISSION_DENIED,
                 false,
             ),
-            408 | 429 | 500 | 502 | 503 | 504 => (
-                "UPSTREAM_ERROR",
-                crate::output::EXIT_UPSTREAM_ERROR,
-                true,
-            ),
-            _ => (
-                "UPSTREAM_ERROR",
-                crate::output::EXIT_UPSTREAM_ERROR,
-                false,
-            ),
+            408 | 429 | 500 | 502 | 503 | 504 => {
+                ("UPSTREAM_ERROR", crate::output::EXIT_UPSTREAM_ERROR, true)
+            }
+            _ => ("UPSTREAM_ERROR", crate::output::EXIT_UPSTREAM_ERROR, false),
         },
         E::ModelParse { .. } => (
             "RESPONSE_INVALID",
@@ -133,31 +117,43 @@ pub fn map_api_error<T: RsMyCQUError>(context: &str, err: &ApiError<T>) -> Mappe
         // 瑞数是上游防护状态，不是本地状态损坏
         E::Session {
             source: SessionError::RuishuError { .. },
-        } => (
-            "UPSTREAM_ERROR",
-            crate::output::EXIT_UPSTREAM_ERROR,
-            false,
-        ),
-        E::Session { .. } => (
-            "STATE_INVALID",
-            crate::output::EXIT_STATE_INVALID,
-            false,
-        ),
-        E::Website { .. } | E::Inner { .. } | E::Whatever { .. } => (
-            "UPSTREAM_ERROR",
-            crate::output::EXIT_UPSTREAM_ERROR,
-            false,
-        ),
+        } => ("UPSTREAM_ERROR", crate::output::EXIT_UPSTREAM_ERROR, false),
+        E::Session { .. } => ("STATE_INVALID", crate::output::EXIT_STATE_INVALID, false),
+        E::Website { .. } | E::Inner { .. } | E::Whatever { .. } => {
+            let err_debug = format!("{err:?}");
+            let err_str = err.to_string();
+            if err_debug.contains("NotLogin")
+                || err_debug.contains("未登录")
+                || err_str.contains("NotLogin")
+                || err_str.contains("未登录")
+            {
+                ("AUTH_REQUIRED", crate::output::EXIT_AUTH_REQUIRED, false)
+            } else {
+                ("UPSTREAM_ERROR", crate::output::EXIT_UPSTREAM_ERROR, false)
+            }
+        }
+    };
+
+    let message = if code == "AUTH_REQUIRED" {
+        let err_debug = format!("{err:?}");
+        if err_debug.contains("NotLogin") || err.to_string().contains("未知错误") {
+            format!(
+                "{context}: SSO session has expired or is unauthenticated; please log in again with 'mycqu auth login'"
+            )
+        } else {
+            format!("{context}: {err}")
+        }
+    } else {
+        format!("{context}: {err}")
     };
 
     MappedError {
         exit_code,
         code,
-        message: format!("{context}: {err}"),
+        message,
         retryable,
     }
 }
-
 /// SSO 待完成认证流程相关错误的细化映射。
 ///
 /// 流程过期、失效、未开始、阶段不匹配与通道未绑定都是可恢复的认证状态，
