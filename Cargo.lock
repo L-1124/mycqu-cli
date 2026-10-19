@@ -1863,7 +1863,7 @@ dependencies = [
 [[package]]
 name = "rsmycqu"
 version = "0.4.4"
-source = "git+https://github.com/L-1124/rsmycqu#11ffbe4b94c39483f51c3b2fa1803790a1a1aa80"
+source = "git+https://github.com/L-1124/rsmycqu#742de2f9931739965fa1086756069309301f7a77"
 dependencies = [
  "aes",
  "base64 0.22.1",
@@ -1871,6 +1871,7 @@ dependencies = [
  "const_format",
  "cookie_store",
  "ecb",
+ "getrandom 0.4.3",
  "hex",
  "md-5",
  "regex",
